@@ -1,22 +1,44 @@
 ## Port Knocking Starter Template
 
-This directory is a starter template for the port knocking portion of the assignment.
+This directory contains my implementation of a simple port knocking system using Python and `iptables`.
 
-### What you need to implement
-- Pick a protected service/port (default is 2222).
-- Define a knock sequence (e.g., 1234, 5678, 9012).
-- Implement a server that listens for knocks and validates the sequence.
-- Open the protected port only after a valid sequence.
-- Add timing constraints and reset on incorrect sequences.
-- Implement a client to send the knock sequence.
+The goal is to keep a protected port closed by default and only open it after a correct sequence of connection attempts (knocks) is received within a short time window.
 
-### Getting started
-1. Implement your server logic in `knock_server.py`.
-2. Implement your client logic in `knock_client.py`.
-3. Update `demo.sh` to demonstrate your flow.
-4. Run from the repo root with `docker compose up port_knocking`.
+---
 
-### Example usage
+### How it works
+
+- The server listens on a predefined sequence of ports (default: `1234, 5678, 9012`).
+- Each client connection attempt is treated as a “knock”.
+- The server tracks knock progress per IP address and enforces a timing window.
+- If the correct sequence is completed in order, the protected port (`2222`) is opened using `iptables`.
+- Any incorrect knock or timeout resets the sequence.
+- The port is closed again when the server restarts.
+
+---
+
+### Components
+
+- **`knock_server.py`**
+  - Listens on knock ports using non-blocking sockets.
+  - Tracks knock order and timing per client IP.
+  - Opens and closes the protected port using `iptables`.
+
+- **`knock_client.py`**
+  - Sends connection attempts to each knock port in order.
+  - Optionally verifies access to the protected port after knocking.
+
+- **`demo.sh`**
+  - Demonstrates the full flow:
+    1. Attempts to access the protected port before knocking (fails).
+    2. Sends the knock sequence.
+    3. Attempts to access the protected port again (succeeds).
+
+---
+
+### Running the demo
+
+Run the demo script with root privileges:
+
 ```bash
-python3 knock_client.py --target 172.20.0.40 --sequence 1234,5678,9012
-```
+sudo ./demo.sh

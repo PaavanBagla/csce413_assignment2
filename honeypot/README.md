@@ -1,16 +1,23 @@
-## Honeypot Starter Template
+# Honeypot Design Explanation
 
-This directory is a starter template for the honeypot portion of the assignment.
+## Purpose
+This honeypot simulates an SSH service to detect and log unauthorized access attempts. It is intentionally lightweight and does not provide real SSH access. Instead, it captures connection attempts, SSH handshakes, and login credentials for analysis.
 
-### What you need to implement
-- Choose a protocol (SSH, HTTP, or multi-protocol).
-- Simulate a convincing service banner and responses.
-- Log connection metadata, authentication attempts, and attacker actions.
-- Store logs under `logs/` and include an `analysis.md` summary.
-- Update `honeypot.py` and `logger.py` (and add modules as needed) to implement the honeypot.
+# Design Overview
+- The honeypot runs inside a Docker container.
+- It listens on port 22 inside the container to mimic a real SSH service.
+- Docker port forwarding exposes it on port 2222 on the host.
+- Any incoming connection receives a fake SSH banner.
+- Usernames and passwords are logged, but access is always denied.
 
-### Getting started
-1. Implement your honeypot logic in `honeypot.py`.
-2. Wire logging in `logger.py` and record results in `logs/`.
-3. Summarize your findings in `analysis.md`.
-4. Run from the repo root with `docker-compose up honeypot`.
+# Key Features
+- Fake SSH banner to appear legitimate
+- Detection of SSH protocol handshakes
+- Credential capture (username/password)
+- File-based logging for later analysis
+
+# Technologies Used
+- Python (socket programming)
+- Docker & Docker Compose
+- TCP networking
+- Logging module

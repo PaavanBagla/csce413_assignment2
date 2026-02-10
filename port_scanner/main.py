@@ -19,9 +19,40 @@ TODO for students:
 
 import socket
 import sys
+import time
 
+def grab_banner(sock):
+    """
+    Attempt to grab a service banner from an open socket.
+    This helps identify what service is running on the port.
+    """
+    try:
+        # Set a short timeout so we don't hang waiting for data
+        sock.settimeout(1.0)
 
-def scan_port(target, port, timeout=1.0):
+        # Try passive banner grab (many services send first)
+        try:
+            data = sock.recv(1024)
+            if data:
+                return data.decode(errors="ignore").strip()
+        except socket.timeout:
+            pass
+        
+        # If no banner, try HTTP probe
+        http_request = b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+        sock.sendall(http_request)
+
+        data = sock.recv(1024)
+        banner = data.decode(errors="ignore")
+
+        # Return HTTP headers only
+        headers = banner.split("\r\n\r\n")[0]
+        return headers.strip()
+
+    except Exception:
+        return "Unknown"
+
+def scan_port(target, port, timeout=0.2):
     """
     Scan a single port on the target host
 
@@ -31,20 +62,29 @@ def scan_port(target, port, timeout=1.0):
         timeout (float): Connection timeout in seconds
 
     Returns:
-        bool: True if port is open, False otherwise
+        state   : "open" or "closed"
+        banner  : service banner if available
     """
     try:
         # TODO: Create a socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # TODO: Set timeout
+        sock.settimeout(timeout)
         # TODO: Try to connect to target:port
-        # TODO: Close the socket
-        # TODO: Return True if connection successful
+        result = sock.connect_ex((target, port))
 
-        pass  # Remove this and implement
+        if result == 0:
+            # If connection succeeds, the port is open
+            banner = grab_banner(sock)
+            sock.close()
+            return "open", banner
+        else:
+            sock.close()
+            return "closed", None
 
     except (socket.timeout, ConnectionRefusedError, OSError):
-        return False
-
+        # Handle common network-related errors safely
+        return "closed", None
 
 def scan_range(target, start_port, end_port):
     """
@@ -66,42 +106,58 @@ def scan_range(target, start_port, end_port):
     # TODO: Implement the scanning logic
     # Hint: Loop through port range and call scan_port()
     # Hint: Consider using threading for better performance
-
     for port in range(start_port, end_port + 1):
-        # TODO: Scan this port
-        # TODO: If open, add to open_ports list
-        # TODO: Print progress (optional)
-        pass  # Remove this and implement
+        try:
+            state, banner = scan_port(target, port)
+
+            # Only show output for OPEN ports (signal > noise)
+            if state == "open":
+                print(f"[+] Port {port}/tcp OPEN")
+                if banner:
+                    print(f"    Service: {banner}")
+
+                open_ports.append((port, banner))
+
+        except KeyboardInterrupt:
+            print("\n[!] Scan interrupted by user")
+            break
 
     return open_ports
 
-
 def main():
     """Main function"""
-    # TODO: Parse command-line arguments
-    # TODO: Validate inputs
-    # TODO: Call scan_range()
-    # TODO: Display results
-
     # Example usage (you should improve this):
     if len(sys.argv) < 2:
-        print("Usage: python3 port_scanner_template.py <target>")
-        print("Example: python3 port_scanner_template.py 172.20.0.10")
+        print("Usage: python3 -m port_scanner --target <host> --ports <start-end>")
+        print("Example: python3 -m port_scanner --target 172.20.0.0/24 --ports 1-10000")
         sys.exit(1)
 
-    target = sys.argv[1]
-    start_port = 1
-    end_port = 1024  # Scan first 1024 ports by default
+    # TODO: Parse command-line arguments
+    try:
+        target = sys.argv[sys.argv.index("--target") + 1]
+        port_range = sys.argv[sys.argv.index("--ports") + 1]
+    except IndexError:
+        print("[!] Missing argument value")
+        sys.exit(1)
 
-    print(f"[*] Starting port scan on {target}")
+    start_port, end_port = map(int, port_range.split("-"))
+
+    # Record the start time to measure scan duration
+    start_time = time.time()
 
     open_ports = scan_range(target, start_port, end_port)
 
-    print(f"\n[+] Scan complete!")
-    print(f"[+] Found {len(open_ports)} open ports:")
-    for port in open_ports:
-        print(f"    Port {port}: open")
+    print("\n==============================")
+    print(f"[+] Scan complete for {target}")
+    print(f"[+] Open ports found: {len(open_ports)}\n")
 
+    for port, banner in open_ports:
+        service = banner if banner else "Unknown"
+        print(f"Port {port}/tcp - {service}")
+
+    end_time = time.time()
+    print(f"\n[+] Total scan time: {end_time - start_time:.2f} seconds")
+    print("==============================")
 
 if __name__ == "__main__":
     main()
