@@ -17,10 +17,10 @@ def handle_client(conn, addr):
     logger.info("New connection from %s:%s", ip, port)
 
     try:
-        # Send fake SSH banner
+        # 1. Send fake SSH banner
         conn.sendall(BANNER.encode())
 
-        # Simulate simple login prompt
+        # 2. Ask for username
         conn.sendall(b"login username: ")
         username = conn.recv(1024).decode(errors="ignore").strip()
 
@@ -34,10 +34,17 @@ def handle_client(conn, addr):
             )
             return  # stop handling this client
 
-        conn.sendall(f"Password: ")
+        # 3. Send custom prompt
+        password_prompt = f"Password for {username}: ".encode()
+        conn.sendall(password_prompt)
+        
+        # Receive the password
         password = conn.recv(1024).decode(errors="ignore").strip()
 
-        # Log the attempted credentials
+        # conn.sendall(b"Password: ")
+        # password = conn.recv(1024).decode(errors="ignore").strip()
+
+        # 4. Log the attempted credentials
         logger.info(
             "Auth attempt from %s:%s -> username='%s', password='%s'",
             ip,

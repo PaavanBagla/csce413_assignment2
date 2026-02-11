@@ -5,7 +5,7 @@ During testing, the honeypot recorded multiple unauthorized connection attempts 
 
 # Attack 1: SSH Client Handshake
 ```bash
-ssh testuser@localhost -p 2222
+ssh testuser@localhost -p 2022
 ```
 This simulates an attacker attempting to connect using a real SSH client.
 
@@ -16,7 +16,7 @@ This simulates an attacker attempting to connect using a real SSH client.
 
 # Attack 2: Manual Credential Attempt
 ```bash
-nc localhost 2222
+nc localhost 2022
 ```
 A fake username and password were entered manually.
 

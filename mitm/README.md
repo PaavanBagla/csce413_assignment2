@@ -9,7 +9,6 @@ and whether sensitive information can be intercepted.
 
 ---
 
-
 ## Task 2.1: Network Traffic Analysis
 
 ## Step 1: Identify the Docker Network
@@ -49,9 +48,10 @@ sudo tcpdump -i br-<network_id> -A -s 0 port 3306 -w mysql_traffic.pcap
 ```
 For my case:
 ```bash
-sudo tcpdump -i br-b6a634d49335 -A -s 0 port 3306 -w mysql_traffic.pcap
+sudo tcpdump -i br-1e7c32866048 -A -s 0 port 3306 -w mysql_traffic.pcap
 ```
 NOTE: Leave This Running
+
 ---
 
 ## Step 4: Generate database traffic

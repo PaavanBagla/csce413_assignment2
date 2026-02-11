@@ -20,6 +20,8 @@ TODO for students:
 import socket
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 def grab_banner(sock):
     """
@@ -86,7 +88,7 @@ def scan_port(target, port, timeout=0.2):
         # Handle common network-related errors safely
         return "closed", None
 
-def scan_range(target, start_port, end_port):
+def scan_range(target, start_port, end_port, max_threads=200):
     """
     Scan a range of ports on the target host
 
@@ -99,6 +101,8 @@ def scan_range(target, start_port, end_port):
         list: List of open ports
     """
     open_ports = []
+    total_ports = end_port - start_port + 1
+    scanned = 0
 
     print(f"[*] Scanning {target} from port {start_port} to {end_port}")
     print(f"[*] This may take a while...")
@@ -106,22 +110,33 @@ def scan_range(target, start_port, end_port):
     # TODO: Implement the scanning logic
     # Hint: Loop through port range and call scan_port()
     # Hint: Consider using threading for better performance
-    for port in range(start_port, end_port + 1):
-        try:
-            state, banner = scan_port(target, port)
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = {
+            executor.submit(scan_port, target, port): port
+            for port in range(start_port, end_port + 1)
+        }
+        for future in as_completed(futures):
+            port = futures[future]
+            scanned += 1
 
-            # Only show output for OPEN ports (signal > noise)
-            if state == "open":
-                print(f"[+] Port {port}/tcp OPEN")
-                if banner:
-                    print(f"    Service: {banner}")
+            try:
+                state, banner = future.result()
 
-                open_ports.append((port, banner))
+                if state == "open":
+                    print(f"\n[+] Port {port}/tcp OPEN")
+                    if banner:
+                        print(f"    Service: {banner}")
+                    open_ports.append((port, banner))
 
-        except KeyboardInterrupt:
-            print("\n[!] Scan interrupted by user")
-            break
+            except KeyboardInterrupt:
+                print("\n[!] Scan interrupted by user")
+                break
 
+            # Progress indicator
+            percent = (scanned / total_ports) * 100
+            print(f"\rProgress: {scanned}/{total_ports} ({percent:.1f}%)", end="")
+
+    print()  # new line after progress bar
     return open_ports
 
 def main():

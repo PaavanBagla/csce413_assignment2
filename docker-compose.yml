@@ -86,6 +86,7 @@ services:
   # TODO: Feel free to update honeypot if needed
   honeypot:
     container_name: 2_network_honeypot
+    profiles: ["security_tools"] # This hides it from a normal 'up'
     build:
       context: ./honeypot
       network: host
@@ -103,6 +104,7 @@ services:
   # TODO: Feel free to update port_knocking if needed
   port_knocking:
     container_name: 2_network_port_knocking
+    profiles: ["security_tools"] # This hides it from a normal 'up'
     build:
       context: ./port_knocking
       network: host
